@@ -1,4 +1,4 @@
-# s4img-mk
+# freebsd-s4-tools
 
 A minimal tool to fabricate FreeBSD S4 hibernate images (ELF format) for UEFI resume testing.
 
@@ -8,6 +8,12 @@ This tool combines a generic binary payload (trampoline) with a TOML-defined mem
 
 * Python 3.11+ (Required for `tomllib`)
 
+## Project Structure
+
+* `generator/`: Python scripts and configuration for fabricating S4 images.
+* `uefi/`: Placeholder for future UEFI bootloader/activator development.
+
+
 ## Usage
 
 1. Prepare your configuration (see `layout/example.toml`) and your trampoline binary.
@@ -15,13 +21,16 @@ This tool combines a generic binary payload (trampoline) with a TOML-defined mem
 
 
 ```bash
-python3 s4img-mk.py layout/example.toml trampoline/hello_world.bin bin/s4img-mk
+python3 generator/main.py \
+generator/layout/example.toml \
+generator/trampoline/hello_world.bin \
+generator/bin/s4img
 ```
 
 You can replace the above parameters with your own/modified TOML, trampoline binary, and the output path.
 
 ## Configuration
-Modify `layout/example.toml` to define:
+Modify `generator/layout/example.toml` to define:
 
 * ELF Layout: p_paddr, p_vaddr, and alignment for segments.
 
