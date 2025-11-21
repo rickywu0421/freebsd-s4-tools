@@ -8,6 +8,7 @@
 
 [Sources]
   Activator.c
+  elf64.h
 
 [Packages]
   MdePkg/MdePkg.dec

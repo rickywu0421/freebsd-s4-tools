@@ -7,6 +7,8 @@
 #include <Protocol/SimpleFileSystem.h>
 #include <Guid/FileInfo.h>
 
+#include "elf64.h"
+
 #define S4_IMAGE_NAME L"\\s4_image.bin"
 
 
