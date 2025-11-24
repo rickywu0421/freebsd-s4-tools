@@ -73,6 +73,7 @@ echo "========================================"
 # -drive ...  : Load the OVMF firmware code and variables via pflash
 #               (readonly=on for vars to prevent QEMU from trying to write back to /usr/share)
 # -drive ...  : Mount the $ESP_DIR directory as a virtual FAT32 USB drive
+# -serial ... : Redirect virtual COM1 to host terminal (to see "Hi" from trampoline)
 # -net none   : Disable networking to reduce noise
 # -nographic  : Optional flag. If enabled, output goes to terminal.
 #               For now, we use the GUI window to see the TianoCore logo.
@@ -83,4 +84,5 @@ qemu-system-x86_64 \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_VARS" \
     -drive format=raw,file=fat:rw:"$ESP_DIR" \
+    -serial stdio \
     -net none
