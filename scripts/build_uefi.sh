@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # ==============================================================================
 # Configuration
@@ -51,13 +51,15 @@ echo "========================================"
 
 # We need to switch to the EDK2 directory to source the setup script correctly.
 # This initializes 'build', 'GenFds', and other build tools in the PATH.
-pushd "$EDK2_DIR" > /dev/null
+# Save current directory for later restoration (sh-compatible alternative to pushd)
+SAVED_DIR="$(pwd)"
+cd "$EDK2_DIR" || exit 1
 
 # Force python3 for recent distributions (e.g., Arch Linux)
 export PYTHON_COMMAND=python3
 
 # Initialize the environment
-. edksetup.sh
+. ./edksetup.sh
 
 # ==============================================================================
 # Build Process
@@ -75,7 +77,8 @@ build -p S4ActivatorPkg/S4ActivatorPkg.dsc \
       -t GCC5 \
       -b DEBUG
 
-popd > /dev/null
+# Return to saved directory (sh-compatible alternative to popd)
+cd "$SAVED_DIR" || exit 1
 
 # ==============================================================================
 # Artifact Handling
