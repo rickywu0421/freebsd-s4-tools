@@ -16,21 +16,43 @@ This project consists of two main components:
 
 ## Requirements
 
-* Python 3.11+ (Required for `tomllib`)
-* EDK2 Build Tools & QEMU (for UEFI development)
+* **Python 3.11+** (Required for `tomllib`)
+* **Build Tools:** `gcc` (or `clang`), `make` (or `gmake` on FreeBSD), `nasm`.
+* **Virtualization:** QEMU (Linux/FreeBSD) or Bhyve (FreeBSD).
 
 ## Project Structure
 
 * `generator/`: Python scripts and configuration for fabricating S4 images.
-* `uefi/`: EDK2 Package source code (`S4ActivatorPkg`) for the bootloader/activator.
+* `uefi/`: Contains the `S4ActivatorPkg` source and the **EDK2 submodule**.
 * `scripts/`: Helper scripts for building UEFI apps and running QEMU.
 * `bin/`: Directory for build artifacts (`Activator.efi`, `s4_image.bin`) and test environment.
 
-## Usage
+## Initialization (One-time Setup)
 
-The workflow involves generating a fake image, building the UEFI activator, and running the simulation.
+This repository vendors EDK2 as a git submodule. You must clone the repository recursively and compile the build tools before use.
+
+### 1. Clone the Repository
+Use the `--recursive` flag to fetch the project, vendored EDK2 submodule, and submodules used in EDK2.
+
+```bash
+git clone --recursive https://github.com/rickywu0421/freebsd-s4-tools.git
+cd $YOUR_DIR/freebsd-s4-tools
+```
+Note: If you have already cloned the repo without the recursive flag, run: `git submodule update --init --recursive`
+
+
+### 2. Compile EDK2 BaseTools
+The build tools (build, GenFds, etc.) need to be compiled for your host OS.
+
+```bash
+make -C uefi/edk2/BaseTools
+```
+
+## Development Cycle
+Once initialized, use the following workflow to generate images and test the loader.
 
 ### 1. Fabricate S4 Image
+
 Prepare your configuration and run the generator:
 
 ```bash
@@ -40,22 +62,24 @@ python3 generator/main.py \
 ```
 
 ### 2. Build UEFI Activator
-Compile the EDK2 application using the helper script:
+
+Compile the EDK2 application using the helper script. This script automatically handles the `PACKAGES_PATH` environment variables.
 
 ```bash
 ./scripts/build_uefi.sh
 ```
 
 ### 3. Run Simulation
-Launch QEMU with OVMF. The script automatically mounts `bin/esp/` as the boot partition.
 
-```bash
+Launch QEMU with OVMF. The script automatically mounts `bin/esp/` as the boot partition and redirects the virtual serial port (COM1) to the terminal.
+
+```
 ./scripts/run_qemu.sh
 ```
 
 ## Configuration
 Modify `generator/layout/example.toml` to define:
 
-* ELF Layout: p_paddr, p_vaddr, and alignment for segments.
+ELF Layout: p_paddr, p_vaddr, and alignment for segments.
 
-* Context State: Initial values for cr3, rsp, rip in the PCB.
+Context State: Initial values for cr3, rsp, rip in the PCB.

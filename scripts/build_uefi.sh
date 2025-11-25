@@ -4,13 +4,12 @@
 # Configuration
 # ==============================================================================
 
-# Path to the official EDK2 source tree.
-# Adjust this path if your EDK2 workspace is located elsewhere.
-EDK2_DIR="$HOME/software/edk2"
-
 # We use $(pwd) assuming this script is run from the project root.
 PROJECT_ROOT="$(pwd)"
 PROJECT_PKG_DIR="${PROJECT_ROOT}/uefi"
+
+# Offical EDK2 as a submodule in this project
+EDK2_DIR="${PROJECT_PKG_DIR}/edk2"
 
 # Output directory for the final binary.
 OUTPUT_DIR="${PROJECT_ROOT}/bin"
