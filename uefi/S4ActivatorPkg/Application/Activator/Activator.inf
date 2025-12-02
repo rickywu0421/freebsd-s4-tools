@@ -19,10 +19,13 @@
   UefiApplicationEntryPoint
   UefiBootServicesTableLib
   MemoryAllocationLib
+  BaseLib
 
 [Protocols]
   gEfiLoadedImageProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
+  gEfiBlockIoProtocolGuid
+  gEfiPartitionInfoProtocolGuid
 
 [Guids]
   gEfiFileInfoGuid

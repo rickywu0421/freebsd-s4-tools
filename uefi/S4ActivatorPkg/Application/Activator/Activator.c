@@ -1,15 +1,23 @@
 #include <Uefi.h>
 #include <Library/UefiLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Library/UefiApplicationEntryPoint.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/SimpleFileSystem.h>
+#include <Protocol/BlockIo.h>
+#include <Protocol/PartitionInfo.h>
 #include <Guid/FileInfo.h>
 
 #include "elf64.h"
 
 #define S4_IMAGE_NAME L"\\s4_image.bin"
+
+// FreeBSD Swap Partition GUID: 516e7cb5-6ecf-11d6-8ff8-00022d09712b
+EFI_GUID gFreeBSDSwapGuid = {
+    0x516e7cb5, 0x6ecf, 0x11d6, {0x8f, 0xf8, 0x00, 0x02, 0x2d, 0x09, 0x71, 0x2b}
+};
 
 VOID
 EFIAPI
@@ -26,76 +34,142 @@ UefiMain (
   )
 {
     EFI_STATUS                         Status;
-    EFI_LOADED_IMAGE_PROTOCOL          *LoadedImage       = NULL;
-    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL    *FileSystem        = NULL;
-    EFI_FILE_PROTOCOL                  *Root              = NULL;
-    EFI_FILE_PROTOCOL                  *S4ImgFile         = NULL;
+    // EFI_LOADED_IMAGE_PROTOCOL          *LoadedImage       = NULL;
+    // EFI_SIMPLE_FILE_SYSTEM_PROTOCOL    *FileSystem        = NULL;
+    // EFI_FILE_PROTOCOL                  *Root              = NULL;
+    // EFI_FILE_PROTOCOL                  *S4ImgFile         = NULL;
+    UINTN                              HandleCount;
+    EFI_HANDLE                         *HandleBuffer;
+    EFI_PARTITION_INFO_PROTOCOL        *PartInfo;
+    EFI_BLOCK_IO_PROTOCOL              *BlkIO;
+    EFI_BLOCK_IO_PROTOCOL              *SwapBlkIO;
     Elf64_Ehdr                         Elf64Ehdr;
-    UINT16                             PhdrNum;
-    UINT16                             PhdrEntSize;
-    UINT64                             PhdrOffset;
     Elf64_Phdr                         *Elf64PhdrTable    = NULL;
     UINTN                              ReadSize;
     EFI_PHYSICAL_ADDRESS               PcbPAddr           = 0;
     EFI_PHYSICAL_ADDRESS               TrampolinePAddr    = 0;
 
-    Print(L"[Activator] Locate Protocols...\n");
+    Print(L"[Activator] Locate swap partition handle...\n");
 
-    Status = gBS->HandleProtocol(
-        ImageHandle,
-        &gEfiLoadedImageProtocolGuid,
-        (VOID **)&LoadedImage
-    );
+    // Status = gBS->HandleProtocol(
+    //     ImageHandle,
+    //     &gEfiLoadedImageProtocolGuid,
+    //     (VOID **)&LoadedImage
+    // );
 
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: Cannot get LoadedImage protocol: %r\n", Status);
-      goto ErrorExit;
-    }
+    // if (EFI_ERROR(Status)) {
+    //   Print(L"Error: Cannot get LoadedImage protocol: %r\n", Status);
+    //   goto ErrorExit;
+    // }
 
-    Status = gBS->HandleProtocol(
-        LoadedImage->DeviceHandle,
-        &gEfiSimpleFileSystemProtocolGuid,
-        (VOID **)&FileSystem
-    );
+    // Status = gBS->HandleProtocol(
+    //     LoadedImage->DeviceHandle,
+    //     &gEfiSimpleFileSystemProtocolGuid,
+    //     (VOID **)&FileSystem
+    // );
 
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: Cannot get SimpleFileSystem protocol: %r\n", Status);
-      goto ErrorExit;
-    }
+    // if (EFI_ERROR(Status)) {
+    //   Print(L"Error: Cannot get SimpleFileSystem protocol: %r\n", Status);
+    //   goto ErrorExit;
+    // }
 
-    Status = FileSystem->OpenVolume(FileSystem, &Root);
+    // Status = FileSystem->OpenVolume(FileSystem, &Root);
 
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: OpenVolume failed: %r\n", Status);
-      goto ErrorExit;
-    }
+    // if (EFI_ERROR(Status)) {
+    //   Print(L"Error: OpenVolume failed: %r\n", Status);
+    //   goto ErrorExit;
+    // }
 
-    Print(L"[Activator] Open File %s...\n", S4_IMAGE_NAME);
+    // Print(L"[Activator] Open File %s...\n", S4_IMAGE_NAME);
 
-    Status = Root->Open(
-             Root,
-             &S4ImgFile,
-             S4_IMAGE_NAME,
-             EFI_FILE_MODE_READ,
-             0
-             );
+    // Status = Root->Open(
+    //          Root,
+    //          &S4ImgFile,
+    //          S4_IMAGE_NAME,
+    //          EFI_FILE_MODE_READ,
+    //          0
+    //          );
 
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: OpenVolume failed: %r\n", Status);
-      goto ErrorExit;
-    }
+    // if (EFI_ERROR(Status)) {
+    //   Print(L"Error: OpenVolume failed: %r\n", Status);
+    //   goto ErrorExit;
+    // }
 
-    ReadSize = sizeof(Elf64_Ehdr);
-    Status = S4ImgFile->Read(S4ImgFile, &ReadSize, &Elf64Ehdr);
+    // ReadSize = sizeof(Elf64_Ehdr);
+    // Status = S4ImgFile->Read(S4ImgFile, &ReadSize, &Elf64Ehdr);
     
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: Read ELF64 header failed: %r\n", Status);
+    // if (EFI_ERROR(Status)) {
+    //   Print(L"Error: Read ELF64 header failed: %r\n", Status);
+    //   goto ErrorExit;
+    // }
+
+    // Print(L"[Activator] Read File %s and Validate ELF header...\n", 
+    //       S4_IMAGE_NAME);
+
+    // ============================================================
+    // Locate FreeBSD swap partition BlockIOProtocol
+    // ============================================================
+    Status = gBS->LocateHandleBuffer(ByProtocol,
+                                     &gEfiBlockIoProtocolGuid,
+                                     NULL,
+                                     &HandleCount,
+                                     &HandleBuffer);
+    if (EFI_ERROR(Status))
+      goto ErrorExit;
+
+    for (UINTN i = 0; i < HandleCount; i++) {
+      Status = gBS->HandleProtocol(HandleBuffer[i],
+                          &gEfiPartitionInfoProtocolGuid,
+                          (VOID *)&PartInfo);
+      if (EFI_ERROR(Status))
+        goto ErrorExit;
+      
+      if (PartInfo->Type == PARTITION_TYPE_GPT) {
+        if (CompareGuid(&gFreeBSDSwapGuid, &PartInfo->Info.Gpt.PartitionTypeGUID)) {
+          Status = gBS->HandleProtocol(HandleBuffer[i],
+                                       &gEfiBlockIoProtocolGuid,
+                                       (VOID *)&BlkIO);
+          if (!EFI_ERROR(Status)) {
+            Print(L"[Activator] Found FreeBSD Swap Partition at Handle %x\n", HandleBuffer[i]);
+            SwapBlkIO = BlkIO;
+            
+            // According to UEFI 2.11 spec, Chapter 7.3.15, caller to 
+            // gBS->LocateHandleBuffer is responsible to free the pool.
+            FreePool(HandleBuffer);
+            break;
+          }
+          else
+            goto ErrorExit;
+        }
+      }
+
+      Print(L"Error: FreeBSD Swap Partition Not Found\n");
       goto ErrorExit;
     }
 
-    Print(L"[Activator] Read File %s and Validate ELF header...\n", 
-          S4_IMAGE_NAME);
-    
+    // ============================================================
+    // From here, We have located the FreeBSD swap partition BlockIOProtocol.
+    // Now let's read the S4 image from swap partition.
+    // ============================================================
+    UINT32 MediaId = SwapBlkIO->Media->MediaId;
+    UINT32 BlockSize = SwapBlkIO->Media->BlockSize;
+    EFI_LBA Lba = 0; // XXX: We assume the S4 image is at the beginning of the swap partition
+
+
+    VOID *BlockBuffer = AllocatePool(BlockSize);
+    if (!BlockBuffer)
+      goto ErrorExit;
+
+    SwapBlkIO->ReadBlocks(SwapBlkIO,
+                          MediaId,
+                          Lba,
+                          BlockSize,
+                          BlockBuffer);
+
+    CopyMem(&Elf64Ehdr, BlockBuffer, sizeof(Elf64_Ehdr));
+
+    FreePool(BlockBuffer);
+
     // Validate the ELF header of the S4 image
     if (((UINT8 *)&Elf64Ehdr)[EI_MAG0] != ELFMAG0 || 
         ((UINT8 *)&Elf64Ehdr)[EI_MAG1] != ELFMAG1 ||
@@ -122,31 +196,38 @@ UefiMain (
 
 
     // Allocate heap space for program headers table
-    PhdrNum = Elf64Ehdr.e_phnum;
-    PhdrEntSize = Elf64Ehdr.e_phentsize;
-    PhdrOffset = Elf64Ehdr.e_phoff;
+    // Note that we need to read extra data if the offset of
+    // the program header table dosen't equal to the block size.
+    UINT16 PhdrNum = Elf64Ehdr.e_phnum;
+    UINT16 PhdrEntSize = Elf64Ehdr.e_phentsize;
+    UINT64 PhdrOffset = Elf64Ehdr.e_phoff;
 
-    Elf64PhdrTable = AllocatePool(PhdrNum * PhdrEntSize);
+    UINTN PhdrTableSize = PhdrNum * PhdrEntSize;
+    EFI_LBA StartLba = PhdrOffset / BlockSize;
+    UINTN OffsetInBlock = PhdrOffset % BlockSize;
+    UINTN TotalReadSize = OffsetInBlock + PhdrTableSize;
+    if (TotalReadSize % BlockSize != 0)
+      TotalReadSize = (TotalReadSize / BlockSize + 1) * BlockSize;
+
+    VOID *PhdrTableBlockBuffer = AllocatePool(TotalReadSize);
+    if (!PhdrTableBlockBuffer)
+      goto ErrorExit;
+
+    SwapBlkIO->ReadBlocks(SwapBlkIO,
+                          MediaId,
+                          StartLba,
+                          TotalReadSize,
+                          PhdrTableBlockBuffer);
+
+
+    Elf64PhdrTable = AllocatePool(PhdrTableSize);
     if (Elf64PhdrTable == NULL) {
       Print(L"Error: Out of memory!\n");
       goto ErrorExit;
     }
 
-    // Program headers table don't necessarily follow the ELF header.
-    // So set the cursor for the sake.
-    Status = S4ImgFile->SetPosition(S4ImgFile, PhdrOffset);
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: Set position %d of file %s failed: %r\n", PhdrOffset, S4_IMAGE_NAME, Status);
-      goto ErrorExit;
-    }
+    CopyMem(Elf64PhdrTable, PhdrTableBlockBuffer, sizeof(Elf64_Phdr) * PhdrNum);
 
-    ReadSize = PhdrNum * PhdrEntSize;
-    Status = S4ImgFile->Read(S4ImgFile, &ReadSize, (VOID *)Elf64PhdrTable);
-    if (EFI_ERROR(Status)) {
-      Print(L"Error: Read program headers table (size = %d) failed: %r\n", 
-            PhdrNum * PhdrEntSize, Status);
-      goto ErrorExit;
-    }
 
     Print(L"[Activator] %d program headers in %s. Parse program headers...\n", 
           PhdrNum, S4_IMAGE_NAME);
