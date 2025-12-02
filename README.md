@@ -21,10 +21,12 @@ Before cloning, ensure you have the necessary system packages installed.
 Requires `base-devel` for build tools, plus QEMU and OVMF for testing.
 
 ```bash
-pacman -S base-devel git python nasm gcc make qemu-full edk2-ovmf
+pacman -S base-devel git python nasm gcc make gptfdisk mtools qemu-full edk2-ovmf
 ```
 
 ### FreeBSD
+**Temporarily unavailable for FreeBSD users**
+
 Requires `gcc` and `binutils` (for EDK2 GCC5 toolchain compatibility), `gmake`, and virtualization tools.
 
 #### Option 1: Using Binary Packages (Recommended)
@@ -97,7 +99,8 @@ Compile the EDK2 application using the helper script. This script automatically 
 
 #### Arch Linux
 
-Launch QEMU with OVMF. The script automatically mounts `bin/esp/` as the boot partition and redirects the virtual serial port (COM1) to the terminal.
+Launch QEMU with OVMF. The script creates a GPT disk image (ESP + Swap) and redirects the 
+virtual serial port (COM1) to the terminal.
 
 ```
 ./scripts/run_qemu.sh
