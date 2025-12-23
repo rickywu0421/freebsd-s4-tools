@@ -1,10 +1,11 @@
 #!/bin/sh
 
+cd "$(dirname "$0")/.."
+
 # ==============================================================================
 # Configuration
 # ==============================================================================
 
-# We use $(pwd) assuming this script is run from the project root.
 PROJECT_ROOT="$(pwd)"
 PROJECT_PKG_DIR="${PROJECT_ROOT}/uefi"
 
