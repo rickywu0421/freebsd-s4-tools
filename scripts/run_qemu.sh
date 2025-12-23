@@ -135,7 +135,6 @@ echo "========================================"
 # Note: We removed the 'fat:rw:...' argument.
 
 qemu-system-x86_64 \
-    -enable-kvm \
     -m 512M \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_VARS" \
