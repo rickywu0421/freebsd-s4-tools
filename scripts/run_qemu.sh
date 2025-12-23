@@ -139,5 +139,5 @@ qemu-system-x86_64 \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_VARS" \
     -drive file="$DISK_IMG",format=raw \
-    -serial stdio \
+    -nographic \
     -net none
