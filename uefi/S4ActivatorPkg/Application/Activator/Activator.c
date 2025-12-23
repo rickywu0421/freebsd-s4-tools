@@ -322,11 +322,6 @@ UefiMain (
 
     Print(L"[Activator] Ready to jump to S4 trampoline!\n");
     Print(L"Trampoline physical address: %lx\n", TrampolinePAddr);
-    Print(L"Press any key to jump to S4 Image...\n");
-
-    gST->ConIn->Reset(gST->ConIn, FALSE);
-    EFI_INPUT_KEY Key;
-    while (gST->ConIn->ReadKeyStroke(gST->ConIn, &Key) == EFI_NOT_READY);
 
 
     // ============================================================
