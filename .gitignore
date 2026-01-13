@@ -2,3 +2,12 @@
 **/output/
 **/__pycache__
 .vscode/
+obj/
+.claude
+
+# FreeBSD source tree is a submodule, don't ignore it
+
+# Build artifacts
+*.o
+*.efi
+*.sym
